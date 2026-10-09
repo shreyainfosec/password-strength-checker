@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Strength Checker & Generator</title>
+  <style>
+    :root {
+      --primary: #1976d2;
+      --primary-hover: #1565c0;
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-variant: #f8fafc;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-focus: #3b82f6;
+      
+      /* Password strength colors matching Flutter package */
+      --color-exposed: #9e0f05;
+      --color-weak: #ef4444;
+      --color-medium: #f59e0b;
+      --color-strong: #22c55e;
+      --color-secure: #0b6c0e;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 28px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Presets Quick Bar */
+    .preset-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .preset-pill {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-variant);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .preset-pill:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    /* Forms & Inputs */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px 44px 12px 14px;
+      font-size: 15px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: var(--transition);
+      background: #ffffff;
+      color: #0f172a;
+      letter-spacing: 0.5px;
+    }
+
+    .input-field:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .input-field.input-error {
+      border-color: var(--color-weak) !important;
+      background: #fef2f2;
+    }
+
+    .input-action-btn {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .input-action-btn:hover {
+      color: var(--text-main);
+      background: #f1f5f9;
+    }
+
+    .field-error-msg {
+      font-size: 12px;
+      color: var(--color-weak);
+      margin-top: 5px;
+      font-weight: 500;
+      display: none;
+    }
+
+    .field-error-msg.visible {
+      display: block;
+    }
+
+    /* Instructions */
+    .top-instructions {
+      font-size: 13px;
+      color: #475569;
+      background: #f8fafc;
+      border-left: 3px solid #3b82f6;
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* Strength Bar */
+    .strength-checker-container {
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+
+    .strength-bar-track {
+      height: 10px;
+      width: 100%;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      padding: 2px;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      transition: border-color 0.3s ease;
+    }
+
+    .strength-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background-color: transparent;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s ease;
+    }
+
+    .strength-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      min-height: 22px;
+      transition: var(--transition);
+    }
+
+    /* Rules Checklist */
+    .rules-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+
+    @media (max-width: 480px) {
+      .rules-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .rule-item.valid {
+      color: #15803d;
+      font-weight: 600;
+    }
+
+    .rule-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 800;
+      transition: var(--transition);
+    }
+
+    .rule-item.valid .rule-icon {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 46px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: #1e293b;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    /* Generator Controls */
+    .generator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 500px) {
+      .generator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .slider-group {
+      margin-bottom: 16px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .slider-val-badge {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .checkbox-label input {
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .generated-box {
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 18px;
+      position: relative;
+    }
+
+    .generated-pass-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #0f172a;
+      word-break: break-all;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+    }
+
+    .generated-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Leaked Lookup tab */
+    .lookup-status-box {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      margin-top: 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .lookup-status-box.exposed {
+      display: flex;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .lookup-status-box.safe {
+      display: flex;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-badge">Flutter Package Demo • v1.3.2</div>
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        Password Strength Checker
+      </h1>
+      <p>Analyze strength, check for exposed leaked passwords, and generate secure keys.</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('form-tab', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        Form Checker
+      </button>
+      <button class="tab-btn" onclick="switchTab('visual-tab', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"></path><path d="M20 12l-5-5"></path><path d="M20 12l-5 5"></path></svg>
+        Live Bar Only
+      </button>
+      <button class="tab-btn" onclick="switchTab('generator-tab', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        Generator
+      </button>
+      <button class="tab-btn" onclick="switchTab('leaked-tab', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Leak Dictionary
+      </button>
+    </nav>
+
+    <!-- Tab 1: PasswordStrengthFormChecker Example -->
+    <div id="form-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-title">
+          <span>PasswordStrengthFormChecker</span>
+          <span style="font-size: 12px; font-weight: 500; color: #64748b;">With Form Validation</span>
+        </div>
+        <div class="card-subtitle">
+          Built-in validation ensuring minimum security level before submission.
+        </div>
+
+        <!-- Presets Bar -->
+        <div class="preset-bar">
+          <span class="preset-label">Test presets:</span>
+          <button class="preset-pill" onclick="loadFormPreset('123456')">Exposed: "123456"</button>
+          <button class="preset-pill" onclick="loadFormPreset('pass')">Weak: "pass"</button>
+          <button class="preset-pill" onclick="loadFormPreset('Pass1234')">Medium: "Pass1234"</button>
+          <button class="preset-pill" onclick="loadFormPreset('PassWord12')">Strong: "PassWord12"</button>
+          <button class="preset-pill" onclick="loadFormPreset('P@ssw0rd!2026')">Secure: "P@ssw0rd!2026"</button>
+        </div>
+
+        <!-- Instructions matching Flutter instructionsOneLine -->
+        <div class="top-instructions" id="form-instructions">
+          At least 8 characters • At least 1 lowercase • At least 1 uppercase • At least 1 number • Special symbol
+        </div>
+
+        <form id="checker-form" onsubmit="handleFormSubmit(event)">
+          <!-- Password Input -->
+          <div class="form-group">
+            <label class="form-label" for="form-password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="form-password" class="input-field" placeholder="Enter password" autocomplete="new-password" oninput="onPasswordInput(this.value)">
+              <button type="button" class="input-action-btn" onclick="toggleVisibility('form-password', this)" title="Toggle visibility">
+                <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div id="form-password-error" class="field-error-msg">Password is not strong enough</div>
+          </div>
+
+          <!-- Strength Bar Component -->
+          <div class="strength-checker-container">
+            <div class="strength-bar-track" id="form-bar-track">
+              <div class="strength-bar-fill" id="form-bar-fill"></div>
+            </div>
+            <div class="strength-status-row" id="form-status-row">
+              <span id="form-status-text" style="color: #94a3b8;">Enter password</span>
+            </div>
+          </div>
+
+          <!-- Configuration Controls -->
+          <div style="background: #f8fafc; border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <label for="min-strength-select" style="font-size: 13px; font-weight: 600; color: #334155;">
+                Minimum Strength Required:
+              </label>
+              <select id="min-strength-select" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; font-weight: 600;" onchange="onPasswordInput(document.getElementById('form-password').value)">
+                <option value="weak">Weak</option>
+                <option value="medium">Medium</option>
+                <option value="strong">Strong</option>
+                <option value="secure" selected>Secure (Default)</option>
+              </select>
+            </div>
+
+            <label class="checkbox-label" style="margin-bottom: 0;">
+              <input type="checkbox" id="require-confirmation" checked onchange="toggleConfirmField(this.checked)">
+              Require password confirmation field
+            </label>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <div class="form-group" id="confirm-group">
+            <label class="form-label" for="form-confirm">Confirm Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="form-confirm" class="input-field" placeholder="Confirm your password" autocomplete="new-password">
+              <button type="button" class="input-action-btn" onclick="toggleVisibility('form-confirm', this)" title="Toggle visibility">
+                <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <div id="form-confirm-error" class="field-error-msg">Passwords do not match</div>
+          </div>
+
+          <!-- Quick Generate Button Inside Form -->
+          <button type="button" class="btn btn-secondary" style="margin-bottom: 16px;" onclick="generateAndFillForm()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            Generate & Fill Secure Password
+          </button>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-primary" id="form-submit-btn">
+            Submit Form
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tab 2: Standalone PasswordStrengthChecker -->
+    <div id="visual-tab" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span>PasswordStrengthChecker</span>
+          <span style="font-size: 12px; font-weight: 500; color: #64748b;">Live Visual Component</span>
+        </div>
+        <div class="card-subtitle">
+          Pure visual feedback component with real-time rule checklist.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="visual-password">Test Password Input</label>
+          <div class="input-wrapper">
+            <input type="text" id="visual-password" class="input-field" placeholder="Type any password..." oninput="onVisualInput(this.value)">
+          </div>
+        </div>
+
+        <!-- Standalone Strength Bar -->
+        <div class="strength-checker-container">
+          <div class="strength-bar-track" id="visual-bar-track">
+            <div class="strength-bar-fill" id="visual-bar-fill"></div>
+          </div>
+          <div class="strength-status-row" id="visual-status-row">
+            <span id="visual-status-text" style="color: #94a3b8;">Enter password</span>
+          </div>
+        </div>
+
+        <!-- Live Rules Breakdown -->
+        <div class="rules-list">
+          <div class="rule-item" id="rule-length">
+            <span class="rule-icon">✕</span>
+            <span>At least 8 characters</span>
+          </div>
+          <div class="rule-item" id="rule-lower">
+            <span class="rule-icon">✕</span>
+            <span>Lowercase letter [a-z]</span>
+          </div>
+          <div class="rule-item" id="rule-upper">
+            <span class="rule-icon">✕</span>
+            <span>Uppercase letter [A-Z]</span>
+          </div>
+          <div class="rule-item" id="rule-digit">
+            <span class="rule-icon">✕</span>
+            <span>Number digit [0-9]</span>
+          </div>
+          <div class="rule-item" id="rule-special">
+            <span class="rule-icon">✕</span>
+            <span>Special character (!@#$%...)</span>
+          </div>
+          <div class="rule-item" id="rule-unexposed">
+            <span class="rule-icon">✕</span>
+            <span>Not in exposed leak list</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: PasswordGenerator -->
+    <div id="generator-tab" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span>PasswordGenerator</span>
+          <span style="font-size: 12px; font-weight: 500; color: #64748b;">Configurable Engine</span>
+        </div>
+        <div class="card-subtitle">
+          Cryptographically secure random password generator matching Dart implementation.
+        </div>
+
+        <!-- Generated Display -->
+        <div class="generated-box">
+          <div class="generated-pass-display" id="gen-display">Click Generate below</div>
+          <div class="generated-meta">
+            <span id="gen-stats">Ready</span>
+            <span id="gen-time" style="font-family: monospace;">0 ms</span>
+          </div>
+        </div>
+
+        <!-- Strength of generated -->
+        <div class="strength-checker-container" style="margin-bottom: 24px;">
+          <div class="strength-bar-track">
+            <div class="strength-bar-fill" id="gen-bar-fill"></div>
+          </div>
+          <div class="strength-status-row" id="gen-status-row">
+            <span id="gen-status-text" style="color: #94a3b8;">-</span>
+          </div>
+        </div>
+
+        <!-- Sliders & Checkboxes Grid -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Password Length</span>
+            <span class="slider-val-badge" id="length-val">16</span>
+          </div>
+          <input type="range" id="gen-length" min="4" max="64" value="16" oninput="document.getElementById('length-val').innerText = this.value">
+        </div>
+
+        <div class="generator-grid">
+          <div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-use-lower" checked>
+              Include Lowercase (a-z)
+            </label>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span style="font-size: 12px; color: var(--text-muted);">Min Lowercase</span>
+                <span style="font-size: 12px;" id="min-lower-val">1</span>
+              </div>
+              <input type="range" id="gen-min-lower" min="0" max="10" value="1" oninput="document.getElementById('min-lower-val').innerText = this.value">
+            </div>
+
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-use-upper" checked>
+              Include Uppercase (A-Z)
+            </label>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span style="font-size: 12px; color: var(--text-muted);">Min Uppercase</span>
+                <span style="font-size: 12px;" id="min-upper-val">1</span>
+              </div>
+              <input type="range" id="gen-min-upper" min="0" max="10" value="1" oninput="document.getElementById('min-upper-val').innerText = this.value">
+            </div>
+          </div>
+
+          <div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-use-digits" checked>
+              Include Digits (0-9)
+            </label>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span style="font-size: 12px; color: var(--text-muted);">Min Digits</span>
+                <span style="font-size: 12px;" id="min-digits-val">1</span>
+              </div>
+              <input type="range" id="gen-min-digits" min="0" max="10" value="1" oninput="document.getElementById('min-digits-val').innerText = this.value">
+            </div>
+
+            <label class="checkbox-label">
+              <input type="checkbox" id="gen-use-special" checked>
+              Include Special Symbols
+            </label>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span style="font-size: 12px; color: var(--text-muted);">Min Special</span>
+                <span style="font-size: 12px;" id="min-special-val">1</span>
+              </div>
+              <input type="range" id="gen-min-special" min="0" max="10" value="1" oninput="document.getElementById('min-special-val').innerText = this.value">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-primary" onclick="generateNewPassword()">
+            Generate Secure Password
+          </button>
+          <button type="button" class="btn btn-secondary" style="width: auto; padding: 0 16px;" onclick="copyGeneratedPassword()" title="Copy to clipboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Common Passwords Dictionary Search -->
+    <div id="leaked-tab" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <span>Leaked Passwords Dictionary</span>
+          <span style="font-size: 12px; font-weight: 500; color: #64748b;" id="dict-count-badge">10,000 Entries</span>
+        </div>
+        <div class="card-subtitle">
+          Search the built-in repository of 10,000 commonly exposed passwords extracted from real-world data leaks.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="dict-search-input">Search / Test a Password</label>
+          <div class="input-wrapper">
+            <input type="text" id="dict-search-input" class="input-field" placeholder="e.g. dragon, 123456, monkey, trustno1..." oninput="checkLeakDictionary(this.value)">
+          </div>
+        </div>
+
+        <div id="lookup-status-box" class="lookup-status-box">
+          <span id="lookup-icon" style="font-size: 20px;">⚠️</span>
+          <div>
+            <div id="lookup-title" style="font-weight: 700;"></div>
+            <div id="lookup-desc" style="font-size: 12px; opacity: 0.9; margin-top: 2px;"></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          <strong>Top common examples in this database:</strong>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+            <span class="preset-pill" onclick="testLeakWord('password')">password</span>
+            <span class="preset-pill" onclick="testLeakWord('123456')">123456</span>
+            <span class="preset-pill" onclick="testLeakWord('qwerty')">qwerty</span>
+            <span class="preset-pill" onclick="testLeakWord('dragon')">dragon</span>
+            <span class="preset-pill" onclick="testLeakWord('baseball')">baseball</span>
+            <span class="preset-pill" onclick="testLeakWord('letmein')">letmein</span>
+            <span class="preset-pill" onclick="testLeakWord('shadow')">shadow</span>
+            <span class="preset-pill" onclick="testLeakWord('superman')">superman</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer info -->
+    <footer class="footer">
+      <p>Interactive web version matching <strong>password_strength_checker</strong> Dart/Flutter specifications.</p>
+      <p>Supports live animation, custom thresholds, leaked dictionary matching, and random cryptographic generation.</p>
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg>
+    <span id="toast-text">Message</span>
+  </div>
+
+  <!-- Load common 10,000 passwords script -->
+  <script src="common_passwords.js"></script>
+
+  <script>
+    /* ==========================================================
+       DART CONSTANTS & STRENGTH ENUM DEFINITIONS
+       ========================================================== */
+    const DEFAULT_LENGTH = 8;
+    const DEFAULT_SPECIAL_CHARS = ['!','@','#','$','%','&','*','(',')','?','£','-','_','='];
+    const DEFAULT_DIGITS = ['0','1','2','3','4','5','6','7','8','9'];
+    const DEFAULT_LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const DEFAULT_UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    // Fallback common passwords in case external common_passwords.js isn't loaded
+    const FALLBACK_COMMON = {
+      "password": true, "123456": true, "12345678": true, "1234": true,
+      "qwerty": true, "12345": true, "dragon": true, "pussy": true,
+      "baseball": true, "football": true, "letmein": true, "monkey": true,
+      "696969": true, "abc123": true, "mustang": true, "michael": true,
+      "shadow": true, "master": true, "jennifer": true, "111111": true,
+      "2000": true, "jordan": true, "superman": true, "harley": true
+    };
+
+    function isPasswordExposed(text) {
+      if (!text) return false;
+      if (window.COMMON_PASSWORDS && typeof window.COMMON_PASSWORDS === 'object') {
+        return window.COMMON_PASSWORDS[text] === true;
+      }
+      return FALLBACK_COMMON[text] === true;
+    }
+
+    const StrengthItem = {
+      ALREADY_EXPOSED: {
+        name: 'alreadyExposed',
+        label: 'Already exposed',
+        color: '#9E0F05',
+        widthPerc: 0.075,
+        icon: '⚠️',
+        rank: 0
+      },
+      WEAK: {
+        name: 'weak',
+        label: 'Weak',
+        color: '#EF4444',
+        widthPerc: 0.15,
+        icon: '',
+        rank: 1
+      },
+      MEDIUM: {
+        name: 'medium',
+        label: 'Medium',
+        color: '#F59E0B',
+        widthPerc: 0.40,
+        icon: '',
+        rank: 2
+      },
+      STRONG: {
+        name: 'strong',
+        label: 'Strong',
+        color: '#22C55E',
+        widthPerc: 0.75,
+        icon: '',
+        rank: 3
+      },
+      SECURE: {
+        name: 'secure',
+        label: 'Secure',
+        color: '#0B6C0E',
+        widthPerc: 1.0,
+        icon: '✓',
+        rank: 4
+      }
+    };
+
+    /**
+     * Exact calculation logic from:
+     * lib/src/enum/password_strength_enum.dart -> PasswordStrength.calculate
+     */
+    function calculateStrength(text) {
+      if (!text || text.length === 0) {
+        return null;
+      }
+
+      if (isPasswordExposed(text)) {
+        return StrengthItem.ALREADY_EXPOSED;
+      }
+
+      if (text.length < DEFAULT_LENGTH) {
+        return StrengthItem.WEAK;
+      }
+
+      let counter = 0;
+      if (/[a-z]/.test(text)) counter++;
+      if (/[A-Z]/.test(text)) counter++;
+      if (/[0-9]/.test(text)) counter++;
+      if (/[!@#\$%&*()?£\-_=]/.test(text)) counter++;
+
+      switch (counter) {
+        case 1: return StrengthItem.WEAK;
+        case 2: return StrengthItem.MEDIUM;
+        case 3: return StrengthItem.STRONG;
+        case 4: return StrengthItem.SECURE;
+        default: return StrengthItem.WEAK;
+      }
+    }
+
+    /* ==========================================================
+       TAB SWITCHING
+       ========================================================== */
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    /* ==========================================================
+       FORM CHECKER LOGIC (Tab 1)
+       ========================================================== */
+    function updateBarUI(trackEl, fillEl, statusTextEl, strength) {
+      if (!strength) {
+        fillEl.style.width = '0%';
+        fillEl.style.backgroundColor = 'transparent';
+        trackEl.style.borderColor = '#cbd5e1';
+        statusTextEl.innerText = 'Enter password';
+        statusTextEl.style.color = '#94a3b8';
+        return;
+      }
+
+      fillEl.style.width = (strength.widthPerc * 100) + '%';
+      fillEl.style.backgroundColor = strength.color;
+      trackEl.style.borderColor = strength.color;
+      
+      const iconSpan = strength.icon ? `<span style="font-size: 14px; margin-left: 4px;">${strength.icon}</span>` : '';
+      statusTextEl.innerHTML = `${strength.label} ${iconSpan}`;
+      statusTextEl.style.color = strength.color;
+    }
+
+    function onPasswordInput(val) {
+      const strength = calculateStrength(val);
+      const track = document.getElementById('form-bar-track');
+      const fill = document.getElementById('form-bar-fill');
+      const text = document.getElementById('form-status-text');
+      updateBarUI(track, fill, text, strength);
+
+      // Clear inline errors while typing
+      document.getElementById('form-password').classList.remove('input-error');
+      document.getElementById('form-password-error').classList.remove('visible');
+    }
+
+    function toggleVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      
+      btn.innerHTML = isPassword 
+        ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`
+        : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    }
+
+    function toggleConfirmField(required) {
+      const confirmGroup = document.getElementById('confirm-group');
+      confirmGroup.style.display = required ? 'block' : 'none';
+    }
+
+    function loadFormPreset(val) {
+      const input = document.getElementById('form-password');
+      input.value = val;
+      onPasswordInput(val);
+      const confirmInput = document.getElementById('form-confirm');
+      if (confirmInput) confirmInput.value = val;
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const passwordVal = document.getElementById('form-password').value;
+      const passInput = document.getElementById('form-password');
+      const passError = document.getElementById('form-password-error');
+      const confirmGroup = document.getElementById('confirm-group');
+      const confirmInput = document.getElementById('form-confirm');
+      const confirmError = document.getElementById('form-confirm-error');
+      const minRequiredKey = document.getElementById('min-strength-select').value;
+      
+      let isValid = true;
+
+      // 1. Check empty
+      if (!passwordVal || passwordVal.trim() === '') {
+        passInput.classList.add('input-error');
+        passError.innerText = 'Password cannot be empty';
+        passError.classList.add('visible');
+        isValid = false;
+      } else {
+        // 2. Check minimum required strength
+        const strength = calculateStrength(passwordVal);
+        const minRankMap = {
+          'weak': StrengthItem.WEAK.rank,
+          'medium': StrengthItem.MEDIUM.rank,
+          'strong': StrengthItem.STRONG.rank,
+          'secure': StrengthItem.SECURE.rank,
+        };
+        const minRank = minRankMap[minRequiredKey];
+        const currentRank = strength ? strength.rank : -1;
+
+        if (!strength || currentRank < minRank || strength === StrengthItem.ALREADY_EXPOSED) {
+          passInput.classList.add('input-error');
+          passError.innerText = strength === StrengthItem.ALREADY_EXPOSED 
+            ? 'This password was found in exposed data leaks! Choose another.' 
+            : `Password is not strong enough (Minimum required: ${minRequiredKey.toUpperCase()})`;
+          passError.classList.add('visible');
+          isValid = false;
+        } else {
+          passInput.classList.remove('input-error');
+          passError.classList.remove('visible');
+        }
+      }
+
+      // 3. Check confirmation if enabled
+      if (document.getElementById('require-confirmation').checked) {
+        if (confirmInput.value !== passwordVal) {
+          confirmInput.classList.add('input-error');
+          confirmError.innerText = 'Passwords do not match';
+          confirmError.classList.add('visible');
+          isValid = false;
+        } else {
+          confirmInput.classList.remove('input-error');
+          confirmError.classList.remove('visible');
+        }
+      }
+
+      if (isValid) {
+        showToast('Processing Data: Password accepted successfully!');
+      }
+    }
+
+    /* ==========================================================
+       LIVE BAR ONLY LOGIC (Tab 2)
+       ========================================================== */
+    function onVisualInput(val) {
+      const strength = calculateStrength(val);
+      const track = document.getElementById('visual-bar-track');
+      const fill = document.getElementById('visual-bar-fill');
+      const text = document.getElementById('visual-status-text');
+      updateBarUI(track, fill, text, strength);
+
+      // Update rules checklist
+      updateRuleState('rule-length', val.length >= DEFAULT_LENGTH);
+      updateRuleState('rule-lower', /[a-z]/.test(val));
+      updateRuleState('rule-upper', /[A-Z]/.test(val));
+      updateRuleState('rule-digit', /[0-9]/.test(val));
+      updateRuleState('rule-special', /[!@#\$%&*()?£\-_=]/.test(val));
+      updateRuleState('rule-unexposed', val.length > 0 && !isPasswordExposed(val));
+    }
+
+    function updateRuleState(id, isMet) {
+      const item = document.getElementById(id);
+      const icon = item.querySelector('.rule-icon');
+      if (isMet) {
+        item.classList.add('valid');
+        icon.innerText = '✓';
+      } else {
+        item.classList.remove('valid');
+        icon.innerText = '✕';
+      }
+    }
+
+    /* ==========================================================
+       PASSWORD GENERATOR LOGIC (Tab 3)
+       ========================================================== */
+    class DartPasswordGenerator {
+      constructor(config) {
+        this.length = config.length || 16;
+        this.minLowercase = config.useLowercase ? (config.minLowercase || 1) : 0;
+        this.minUppercase = config.useUppercase ? (config.minUppercase || 1) : 0;
+        this.minDigits = config.useDigits ? (config.minDigits || 1) : 0;
+        this.minSpecial = config.useSpecialChars ? (config.minSpecial || 1) : 0;
+        this.specialChars = config.specialChars || DEFAULT_SPECIAL_CHARS;
+        this.useSpecialChars = config.useSpecialChars ?? true;
+        this.useDigits = config.useDigits ?? true;
+        this.useLowercase = config.useLowercase ?? true;
+        this.useUppercase = config.useUppercase ?? true;
+        this.numberOfShuffles = config.numberOfShuffles || 1;
+      }
+
+      getRandomInt(max) {
+        const array = new Uint32Array(1);
+        window.crypto.getRandomValues(array);
+        return array[0] % max;
+      }
+
+      generate() {
+        const t0 = performance.now();
+        const allChars = [];
+        if (this.useSpecialChars) allChars.push(...this.specialChars);
+        if (this.useDigits) allChars.push(...DEFAULT_DIGITS);
+        if (this.useLowercase) allChars.push(...DEFAULT_LOWERCASE);
+        if (this.useUppercase) allChars.push(...DEFAULT_UPPERCASE);
+
+        if (allChars.length === 0) {
+          throw new Error('At least one character set must be enabled');
+        }
+
+        const buffer = [];
+
+        for (let i = 0; i < this.minLowercase; i++) {
+          buffer.push(DEFAULT_LOWERCASE[this.getRandomInt(DEFAULT_LOWERCASE.length)]);
+        }
+
+        for (let i = 0; i < this.minUppercase; i++) {
+          buffer.push(DEFAULT_UPPERCASE[this.getRandomInt(DEFAULT_UPPERCASE.length)]);
+        }
+
+        for (let i = 0; i < this.minDigits; i++) {
+          buffer.push(DEFAULT_DIGITS[this.getRandomInt(DEFAULT_DIGITS.length)]);
+        }
+
+        for (let i = 0; i < this.minSpecial; i++) {
+          buffer.push(this.specialChars[this.getRandomInt(this.specialChars.length)]);
+        }
+
+        const remaining = Math.max(0, this.length - buffer.length);
+        for (let i = 0; i < remaining; i++) {
+          buffer.push(allChars[this.getRandomInt(allChars.length)]);
+        }
+
+        // Shuffle
+        for (let s = 0; s < this.numberOfShuffles; s++) {
+          for (let i = buffer.length - 1; i > 0; i--) {
+            const j = this.getRandomInt(i + 1);
+            const temp = buffer[i];
+            buffer[i] = buffer[j];
+            buffer[j] = temp;
+          }
+        }
+
+        const elapsed = Math.max(1, Math.round(performance.now() - t0));
+        return {
+          password: buffer.slice(0, this.length).join(''),
+          timeMs: elapsed
+        };
+      }
+    }
+
+    let lastGeneratedPassword = '';
+
+    function generateNewPassword() {
+      const length = parseInt(document.getElementById('gen-length').value, 10);
+      const useLower = document.getElementById('gen-use-lower').checked;
+      const useUpper = document.getElementById('gen-use-upper').checked;
+      const useDigits = document.getElementById('gen-use-digits').checked;
+      const useSpecial = document.getElementById('gen-use-special').checked;
+
+      const minLower = parseInt(document.getElementById('gen-min-lower').value, 10);
+      const minUpper = parseInt(document.getElementById('gen-min-upper').value, 10);
+      const minDigits = parseInt(document.getElementById('gen-min-digits').value, 10);
+      const minSpecial = parseInt(document.getElementById('gen-min-special').value, 10);
+
+      try {
+        const generator = new DartPasswordGenerator({
+          length,
+          useLowercase: useLower,
+          useUppercase: useUpper,
+          useDigits: useDigits,
+          useSpecialChars: useSpecial,
+          minLowercase: minLower,
+          minUppercase: minUpper,
+          minDigits: minDigits,
+          minSpecial: minSpecial,
+          numberOfShuffles: 2
+        });
+
+        const res = generator.generate();
+        lastGeneratedPassword = res.password;
+
+        document.getElementById('gen-display').innerText = res.password;
+        document.getElementById('gen-stats').innerText = `${res.password.length} characters`;
+        document.getElementById('gen-time').innerText = `${res.timeMs} ms`;
+
+        // Update strength bar for generated password
+        const strength = calculateStrength(res.password);
+        const fill = document.getElementById('gen-bar-fill');
+        const text = document.getElementById('gen-status-text');
+        if (strength) {
+          fill.style.width = (strength.widthPerc * 100) + '%';
+          fill.style.backgroundColor = strength.color;
+          text.innerHTML = `${strength.label} ${strength.icon || ''}`;
+          text.style.color = strength.color;
+        }
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function copyGeneratedPassword() {
+      if (!lastGeneratedPassword) return;
+      navigator.clipboard.writeText(lastGeneratedPassword).then(() => {
+        showToast('Password copied to clipboard!');
+      });
+    }
+
+    function generateAndFillForm() {
+      const generator = new DartPasswordGenerator({
+        length: 16,
+        useLowercase: true,
+        useUppercase: true,
+        useDigits: true,
+        useSpecialChars: true,
+        minLowercase: 2,
+        minUppercase: 2,
+        minDigits: 2,
+        minSpecial: 2,
+        numberOfShuffles: 2
+      });
+      const res = generator.generate();
+      const input = document.getElementById('form-password');
+      input.value = res.password;
+      onPasswordInput(res.password);
+      
+      const confirmInput = document.getElementById('form-confirm');
+      if (confirmInput) {
+        confirmInput.value = res.password;
+        confirmInput.classList.remove('input-error');
+        document.getElementById('form-confirm-error').classList.remove('visible');
+      }
+
+      showToast(`Generated secure password (${res.password.length} chars)`);
+    }
+
+    /* ==========================================================
+       LEAK DICTIONARY SEARCH (Tab 4)
+       ========================================================== */
+    function checkLeakDictionary(word) {
+      const box = document.getElementById('lookup-status-box');
+      const title = document.getElementById('lookup-title');
+      const desc = document.getElementById('lookup-desc');
+      const icon = document.getElementById('lookup-icon');
+
+      if (!word || word.trim() === '') {
+        box.className = 'lookup-status-box';
+        return;
+      }
+
+      const trimmed = word.trim();
+      const isLeaked = isPasswordExposed(trimmed);
+
+      if (isLeaked) {
+        box.className = 'lookup-status-box exposed';
+        icon.innerText = '🚨';
+        title.innerText = `EXPOSED! Found "${trimmed}" in common leaked passwords`;
+        desc.innerText = 'This password exists in the 10,000 most frequently breached credentials list and must not be used.';
+      } else {
+        box.className = 'lookup-status-box safe';
+        icon.innerText = '🛡️';
+        title.innerText = `SAFE! "${trimmed}" is NOT in the 10,000 leak database`;
+        desc.innerText = 'Not found among top 10,000 common passwords. Make sure it also meets length and character complexity rules.';
+      }
+    }
+
+    function testLeakWord(word) {
+      document.getElementById('dict-search-input').value = word;
+      checkLeakDictionary(word);
+    }
+
+    /* ==========================================================
+       TOAST UTILITY
+       ========================================================== */
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').innerText = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check count of loaded common passwords
+      const dictCount = window.COMMON_PASSWORDS ? Object.keys(window.COMMON_PASSWORDS).length : Object.keys(FALLBACK_COMMON).length;
+      document.getElementById('dict-count-badge').innerText = `${dictCount.toLocaleString()} Entries`;
+
+      // Pre-fill generator
+      generateNewPassword();
+    });
+  </script>
+</body>
+</html>

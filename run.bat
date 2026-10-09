@@ -1,0 +1,3 @@
+@echo off
+echo Launching Password Strength Checker in default browser...
+start "" "%~dp0index.html"
